@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piccadilly Line Moves Finder</title>
+<style>
+:root{--bg:#f2f4f9;--card:#fff;--ink:#0e1a3d;--mute:#5a6585;--line:#d5dbeb;--blue:#1c3f94;--red:#dc241f;--pa:#fff1a8;--warnbg:#fde8e7;--note:#e8edf9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1226;--card:#141d38;--ink:#e8ecf8;--mute:#9aa6c9;--line:#27345c;--blue:#7fa2ff;--red:#ff6b66;--pa:#4a4210;--warnbg:#3a1a1c;--note:#1b2750}}
+:root[data-theme="dark"]{--bg:#0b1226;--card:#141d38;--ink:#e8ecf8;--mute:#9aa6c9;--line:#27345c;--blue:#7fa2ff;--red:#ff6b66;--pa:#4a4210;--warnbg:#3a1a1c;--note:#1b2750}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Gill Sans","Gill Sans MT","Trebuchet MS",system-ui,sans-serif}
+header{background:var(--blue);color:#fff;padding:22px 16px 18px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) header{background:#16224a;color:#e8ecf8}}
+:root[data-theme="dark"] header{background:#16224a;color:#e8ecf8}
+.wrap{max-width:760px;margin:0 auto}
+h1{margin:0;font-size:1.55rem;letter-spacing:.2px}
+header p{margin:2px 0 14px;opacity:.85;font-size:.95rem}
+#q{width:100%;font:inherit;font-size:1.15rem;padding:14px 16px;border-radius:10px;border:3px solid #fff;background:#fff;color:#0e1a3d}
+#q:focus-visible{outline:3px solid #ffd02b;outline-offset:2px}
+main{padding:14px 16px 40px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 16px}
+.chip{font:inherit;font-size:.95rem;padding:7px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.chip:hover,.chip:focus-visible{border-color:var(--blue);outline:none}
+.st{margin:0 0 6px;font-size:1.3rem}
+.cnt{color:var(--mute);margin:0 0 12px;font-size:.92rem}
+.move{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:6px;margin:0 0 14px}
+.move summary{list-style:none;cursor:pointer;display:flex;gap:12px;align-items:center;padding:12px 14px;font-weight:700}
+.move summary::-webkit-details-marker{display:none}
+.move summary::after{content:"+";margin-left:auto;color:var(--mute);font-size:1.4rem;line-height:1}
+.move[open] summary::after{content:"\2212"}
+.sp{flex:none;width:44px;height:44px;border-radius:50%;border:4px solid var(--red);display:grid;place-items:center;font-weight:800;font-size:1.05rem;background:#fff;color:#111}
+.sp.none{border-color:var(--line);color:var(--mute)}
+.body{padding:2px 16px 14px 14px}
+ol{margin:0;padding:0;list-style:none;counter-reset:s}
+li{margin:9px 0;padding-left:34px;position:relative}
+li.n{counter-increment:s}
+li.n::before{content:counter(s);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--note);color:var(--blue);font-size:.85rem;font-weight:700;display:grid;place-items:center}
+li.ce{padding:6px 12px;margin:12px 0 12px 34px;background:var(--note);border-radius:6px;font-style:italic;font-weight:700;color:var(--blue)}
+li.w{background:var(--warnbg);color:var(--red);font-weight:700;padding:8px 12px 8px 12px;border-radius:6px;margin-left:34px}
+li.pa{background:var(--pa);padding:8px 12px;border-radius:6px;margin-left:34px;font-style:italic}
+li.h{font-weight:700;margin:16px 0 4px;padding-left:0;text-decoration:underline;text-underline-offset:3px}
+li.i{color:var(--mute);font-style:italic;margin-left:34px;padding-left:0}
+b.c{font-weight:800;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.93em;background:var(--note);padding:0 4px;border-radius:3px;white-space:nowrap}
+mark{background:#ffd02b;color:#111;border-radius:2px}
+.empty{padding:28px 0;color:var(--mute)}
+footer{color:var(--mute);font-size:.82rem;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}
+.row{display:flex;gap:8px;align-items:center;margin:0 0 10px}
+.lnk{font:inherit;font-size:.9rem;background:none;border:none;color:var(--blue);text-decoration:underline;cursor:pointer;padding:0}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Piccadilly line moves finder</h1><p>Type a station to see every reversing, depot and siding move there.</p>
+<input id="q" type="search" placeholder="e.g. Acton, Arnos, KX, T5, PJ31" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Station or signal"></div></header>
+<main><div class="wrap"><div class="chips" id="chips"></div><div id="out"></div>
+<footer>Built from the Piccadilly line “Reversing Moves, including depots and sidings” booklet, v1.0, August 2022. Training aid only: always check the current Rule Book, latest booklet version and instructions from Control before a move. Condensed from the booklet; signal maps are not included.</footer></div></main>
+<script>
+// Line markers: ! warning, @ PA announcement, = sub-heading, ~ note, CE change ends, others numbered steps
+const D=[
+["Cockfosters","cfs,cockfosters depot,wash,pm",[
+["Platforms to depot east",5,[
+"=Platform 1","Accept SHUNT PM31 displaying route 1, 2 or 3. Route 1 → 28 road. Route 2 → 29 road (wash). Route 3 → 30 road","!DO NOT ACCEPT ROUTE 4 or 5",
+"=Platform 3","Accept SHUNT PM32 displaying route 1 or 2. Route 1 → 28 road. Route 2 → 29 road (wash)",
+"=Platform 4","Accept SHUNT PM33 displaying route 2 or 3. Route 2 → 28 road. Route 3 → 29 road (wash)","!DO NOT ACCEPT ROUTE 1",
+"=Then, in the reception road",
+"28 road: stop at the STOP board. Await a GREEN hand-lamp or hand-flag signal. You will be shown 1, 2, 3 or 4 fingers",
+"29 road (the wash): stop at the STOP board. Await BOTH the white flashing ‘PROCEED WHEN AUTHORISED’ board AND a GREEN hand signal from the shunter at the other end of the wash. You will be shown 1, 2 or 3 fingers","~The wash cuts out if you travel at over 5mph",
+"30 road: stop at the STOP board. Await a GREEN hand signal. You will be shown 1, 2 or 3 fingers, or told BACK END ON in the sheds (as in Northfields depot), stopping at the yellow line",
+"=Fingers","1 = EAST road (first full road). 2 = MIDDLE road (second full road). 3 = WEST road (third full road). 4 = 34 WEST WEST road (final set of walk boards)"]],
+["Depot east to platforms",5,[
+"=34 – 38 roads via 28 road","Prep the train for service with brake test and sign the defect log","Await the shunter to call you over the train radio to the ‘East End Stop Board’","Proceed at 5mph and stop before the STOP board","Await the shunter’s hand signal to pass the stop boards","Proceed at 5mph to the outlet SHUNT PM7","When it clears with a route indication, proceed to the platform at no more than 15mph. Route 1 → Platform 1. Route 2 → Platform 2/3. Route 3 → Platform 4",
+"=39 – 44 roads via 29 road (wash)","As above, with these changes: the STOP board also has a lighted ‘PROCEED WHEN AUTHORISED’ sign, so wait for it to illuminate as well as the shunter’s hand signal. Outlet SHUNT is PM6, same route indications",
+"=44 road / 45M or shed roads via 30 road","Prep the train, brake test, sign the defect log. Await call to the ‘East End Stop Board’. 5mph, stop before the STOP board, await hand signal. 5mph to outlet SHUNT PM5. When it clears, proceed to platform 1 at no more than 13mph","!You can only access Cockfosters platform 1 from 30 road"]]
+]],
+["Oakwood","oak,pk,cockfosters depot west",[
+["Eastbound platform to depot west",10,[
+"Accept SHUNT PK4 with route 1 or 2. Route 1 → C Cleaning Shed, Test West or Test Middle. Route 2 → roads 34 – 44 and A Cleaning Shed",
+"Proceed at 10mph and DO NOT STOP – you could easily gap here","If the shunter is not there, proceed to the first set of walk boards and contact CFS DDM on Auto 48892",
+"You will invariably see a shunter showing a GREEN hand-lamp or hand-flag and a finger indication",
+"=From Route 1","1 → Test West. 2 → Test Middle. C → C Cleaning shed (stable FULLY in the shed)",
+"=From Route 2","1 → WEST road. 2 → MIDDLE road. 3 → EAST road. C → A Cleaning shed, back end on as in Northfields depot","=On 34 road","1 → WEST WEST. 2 → WEST. 3 → MIDDLE. 4 → EAST"]],
+["Westbound platform to depot west",10,["As the eastbound platform move, except the inlet shunt at the tailwall is SHUNT PK5","~Route 1 → C Cleaning / Test roads. Route 2 → roads 34 – 44 and A Cleaning. Same finger indications as eastbound"]],
+["Depot west to westbound platform",5,[
+"=34 – 44 roads and ‘A Cleaning’ via PK20","Prep the train for service with brake test and sign the defect log","Await the shunter to call you over the train radio to the ‘West End outlet’","Proceed at 5mph to the outlet SHUNT PK20","When it clears with Route 1, proceed to the platform at no more than 10mph","!DO NOT ACCEPT ROUTE 2",
+"=Test Road via PK19","Prep the train, brake test, sign the defect log","Await call to the ‘West End outlet’","Proceed at 5mph to the outlet SHUNT PK19","!DO NOT PLUNGE","When it clears with Route 1, proceed to the platform at no more than 10mph","!DO NOT ACCEPT ROUTE 2"]],
+["East to west",10,["Stop at the usual stopping mark on the Eastbound platform","CE","Await SIGNAL PK21 to clear showing a GREEN aspect","Proceed at a maximum of 10mph until clear of points"]]
+]],
+["Arnos Grove","arnos,pj",[
+["East to west",15,[
+"=Platform 1","SIGNAL PJ2 displays GREEN with LEFT route. Stop at normal stopping mark","CE","When SIGNAL PJ30 displays GREEN, proceed at 15mph until clear of points – adjacent to signal A8961",
+"=Platform 2 / 3","SIGNAL PJ2 displays GREEN with NO route. Stop at normal mark and open doors on LEFT side. When the DVA has finished, open doors on RIGHT side","CE","When SIGNAL PJ31 displays GREEN, close doors on BOTH sides and proceed at 15mph until clear of points – adjacent to signal A8961",
+"=Platform 4 (10mph)","Accept SIGNAL PJ2 displaying GREEN with route to the RIGHT","!Beware of the 10mph train stop in platform 4","Stop at the diamond in the 4-foot","CE","When SIGNAL PJ32 displays GREEN, depart as normal"]],
+["West to east – platform 2/3 only",20,[
+"SIGNAL PJ34 displays GREEN with a RIGHT route indication","Stop at the normal stopping mark, open doors on LEFT then RIGHT sides","@Make a PA advising of destination COCKFOSTERS","CE","SIGNAL PJ6 displays GREEN","Proceed at 20mph until clear of points – adjacent to signal A903","!To reverse from platform 4 west to east, you must reverse via Arnos Grove sidings"]],
+["Platforms to sidings",10,[
+"Platforms 1, 2/3 and 4: stop at the usual stopping mark and make a PA","Detrain using porter buttons","SHUNT PJ27 (plat 1), PJ28 (plat 2/3) or PJ29 (plat 4) clears","Proceed at 10mph to inlet SHUNT PJ26 with route: 1 → 25 road, 2 → 26, 3 → 27, 4 → 28, 5 → 29, 6 → 30, 7 → 31","Stop at the diamond stopping mark at the end of the siding"]],
+["Sidings to platforms",10,[
+"When your train number appears on the display, press the PLUNGER adjacent to your road","~Your shunt’s signal letter appears at the end of the train number board (e.g. 300 A)","Await your shunt to clear (PJ8a – PJ8g for roads 31 – 25)","When it clears, proceed at 10mph to the outlet shunt PJ9","SHUNT PJ9 clears with Route 1 → Platform 1, Route 2 → Platforms 2/3, Route 3 → Platform 4","!Beware of signals PJ3/500 (plat 1), PJ4/600 (plat 2/3) and the 10mph slow speed train stop in platform 4","Stop at the normal stopping mark at your platform and continue as instructed"]]
+]],
+["Wood Green","wg,pg",[
+["East to west via siding",10,["Detrain at Wood Green eastbound using porter buttons","Await SHUNT PG3 to clear","Proceed at no more than 10mph into the siding to the FRL / 7 board","!BE AWARE of the 10mph train stop in the siding","CE","Await SHUNT PG10 to clear and proceed at 10mph into Wood Green platform 2 (westbound)"]],
+["West to siding / west to west",10,["Stop at Wood Green platform 2 (westbound) and detrain using porter buttons","CE","SHUNT PG4 will clear","Proceed at no more than 10mph into the siding to the FRL / 7 board","!BE AWARE of the 10mph train stop in the siding","CE","Await SHUNT PG10 to clear and proceed at 10mph into platform 2 (westbound), or await instructions to be walked out of the siding back to the platform by station staff"]]
+]],
+["Kings Cross St Pancras","kings cross,king's cross,kx,kxsp,st pancras,l",[
+["West to east",10,["Stop at the normal stopping point, platform 5 (westbound)","Detrain using porter buttons","Accept GREEN signal L1","STOP at the 7 car / Limit of Shunt board","CE","When SHUNT L6 clears, depart at 10mph until fully berthed at the normal stopping mark in platform 6 (eastbound)","Open doors and continue"]],
+["East to west",10,[
+"@If reversing in service, announce at Russell Square: The front set of doors of the first car will not open at Kings Cross St Pancras. Please use the rear doors only. This train terminates at the next station, Kings Cross St Pancras.",
+"Arrive platform 6 (eastbound) and stop at the advanced stopping mark (S diamond)","Activate the end door cut out","Push the CSDE override button","Using the bulkhead, open the doors on the correct platform side","Close down the cab and remove control key","Normalise the end door cut out","Leave the cab by the J-door into the passenger saloon","Speak to the member of staff on the platform and ensure they understand their role in the move","~If they do not, advise Control and depart out of service – use porter buttons on the entire train to close all doors and re-enter service at Russell Square westbound","Using the porter button, close the doors of the car you have just alighted only","CE","Set up the train and accept SIGNAL L2 displaying GREEN","!DO NOT ACCEPT SHUNT L18","Proceed at 10mph until the limit of shunt board"]]
+]],
+["Green Park / Down Street","gp,down street,pb",[
+["Green Park / Down Street siding – west to east",10,["Detrain at Green Park using porter buttons","Station starter SIGNAL PB1 displays GREEN","Continue to SIGNAL PB3 / SHUNT PB4","!You must pull right up to this signal for it to clear","SHUNT PB4 clears: continue at 10mph into Down Street siding","Stop at the first set of Fixed Red Lights","~Down Street siding is long enough to fit two trains","CE","Press the plunger in the siding","When SHUNT PB9 clears, accept and travel at 10mph until clear of points at signal PB8"]],
+["Down Street siding – east to siding",10,["Detrain at Hyde Park Corner using porter buttons","Accept GREEN signal and continue as normal up to SIGNAL PB8","CE","LOOK UP to find SHUNT PB5 and continue at 10mph into Down Street siding","Stop at the first set of Fixed Red Lights","~If stabling the train there, there is a walkway to the end of the siding leading to Hyde Park Corner station. You MUST advise Piccadilly Control (Auto 105) if you do this, and Traction Current should be switched off","!You can only depart EASTBOUND from Down Street siding"]]
+]],
+["Hyde Park Corner","hpc,hyde park,pb",[
+["West to east",10,[
+"@If reversing in service, announce at Green Park: The front set of doors of the first car will not open at Hyde Park Corner. Please use the rear doors only. This train terminates at the next station, Hyde Park Corner.",
+"Arrive platform 2 (westbound) and stop at the advanced stopping mark (S diamond)","Activate the end door cut out","Push the CSDE override button","Using the bulkhead, open the doors on the correct platform side","Close down the cab and remove control key","Normalise the end door cut out","Leave the cab by the J-door into the passenger saloon","Speak to the member of staff on the platform and ensure they understand their role in the move","~If they do not, advise Control and depart out of service – use porter buttons on the entire train to close all doors and re-enter service at Green Park eastbound","Using the porter button, close the doors of the car you have just alighted only","CE","Set up the train and accept SIGNAL PB20 displaying GREEN, departing eastbound","Proceed at 10mph until the limit of shunt board"]],
+["East to west",10,["Detrain at Hyde Park Corner eastbound using porter buttons","Accept SIGNAL PB22 displaying GREEN","Continue to signal PB11 / Limit of Shunt","CE","When SHUNT PB18 clears, proceed at 10mph over the points to the normal stopping mark","Continue westbound"]]
+]],
+["Barons Court","bc,wd",[
+["West to east",10,["Detrain at Barons Court using porter buttons","Accept SIGNAL WD35 displaying GREEN with route indicator to the RIGHT","Proceed at 10mph to the stopping mark in the siding","CE","Accept SIGNAL WD13a displaying GREEN","!DO NOT ACCEPT SHUNT WD13b","Proceed into Barons Court eastbound platform at 10mph"]],
+["West to east via Hammersmith eastbound platform",10,["@Make a PA at Barons Court: This train terminates at the next station, but if you wish to travel towards Acton Town, alight the train here as we will be arriving into the opposite platform at Hammersmith.","Accept SIGNAL WD35 displaying GREEN with route indicator to the RIGHT","Proceed at 10mph to the stopping mark in the siding","Accept SIGNAL WD30a displaying GREEN with route indicator to the RIGHT","!DO NOT ACCEPT SHUNT WD30b","Proceed into Hammersmith eastbound platform at 10mph, stopping at the diamond stopping mark","You will need to carry out the CSDE Override procedure","CE","Depart as normal under a GREEN aspect on SIGNAL WD10a","!You must not accept any shunt in Hammersmith / Barons Court siding"]]
+]],
+["Hammersmith","hammersmith,hsmith,wd",[
+["West to east via westbound platform",10,["Stop at the usual stopping mark at Hammersmith westbound platform","CE","Accept SIGNAL WD31 displaying GREEN","Proceed into Hammersmith siding at 10mph","When SIGNAL WD13a displays GREEN, proceed at 10mph into Barons Court eastbound","!You must not accept any shunt in Hammersmith / Barons Court siding"]],
+["East to west",10,["Stop at the usual stopping mark at Hammersmith eastbound platform","Detrain using porter buttons","When SHUNT WD10b clears, proceed up to signal WD13a, or the diamond stopping mark in Hammersmith siding, at 10mph","CE","Accept SIGNAL WD30a displaying GREEN with route indicator to the LEFT","Proceed at 10mph to the normal stopping mark on the westbound platform","!You must not accept any shunt in Hammersmith / Barons Court siding"]]
+]],
+["Acton Town","acton,at,wl,east sidings",[
+["West to east via 26 siding",10,["Stop at the usual stopping mark at platform 2 (westbound fast) ONLY","Detrain using porter buttons","When SHUNT WL34 clears, proceed at 10mph to the diamond stopping mark at the end of 26 siding","CE","When SHUNT WL91 clears: Route 1 → platform 4 (eastbound local). Route 2 → platform 3 (eastbound fast)","Proceed at 10mph to the normal stopping mark on the eastbound platform"]],
+["Westbound fast to east sidings",10,["Stop at the usual stopping mark at platform 2 (westbound fast) ONLY","Detrain using porter buttons while you change ends","CE","Accept SHUNT WL59 with route indications and proceed at 10mph to the correct stopping mark: Route 1 → 23 siding. Route 2 → 22 siding. Route 3 → 21 siding","!You cannot access Acton Town east sidings from the eastbound local platform","~You can stable / leave a train in the east sidings, and you can pick up a train there. Walking route: the yellow walkway from the eastbound platform (behind the cabin) between the eastbound local and fast lines up to the sidings","!Beware of trains moving in both directions if walking to / from the sidings"]],
+["Eastbound to sidings",10,["Detrain using porter buttons","Accept SHUNT WL88 (fast) / SHUNT WL108 (local) with route: Route 1 → 23 siding. Route 2 → 22 siding. Route 3 → 21 siding","Proceed at 10mph to the correct stopping mark"]],
+["East sidings to platforms",10,["=Shunt WL51 (21 siding)","Route 1 → platform 1 (westbound local). Route 2 → platform 2 (westbound fast). Route 3 → platform 3 (eastbound fast)","=Shunt WL53 (22 siding)","Route 1 → platform 2 (westbound fast). Route 2 → platform 3 (eastbound fast)","=Shunt WL55 (23 siding)","Route 1 → platform 2 (westbound fast). Route 2 → platform 3 (eastbound fast)","Accept the signal with the correct route and proceed at 10mph"]]
+]],
+["Northfields","nfd,northfields depot,wr,south ealing",[
+["West to east via wrong road starter",10,["Stop at the usual stopping mark at Northfields westbound fast","CE","SIGNAL WR10 displays GREEN: proceed at 10mph over the crossover to South Ealing station"]],
+["Platforms to depot east (NFDDTE)",10,["=Platform 1 (westbound local)","Accept SHUNT WR35a and proceed at 10mph to SHUNT WR28","=Platform 2 (westbound fast)","Accept SHUNT WR32b displaying ROUTE 1 and proceed at 10mph to SHUNT WR29","=Platform 3 (eastbound fast)","Accept SHUNT WR31 displaying ROUTE 1 and proceed at 10mph to SHUNT WR29","=Platform 4 (eastbound local)","Accept SHUNT WR30 displaying ROUTE 1 and proceed at 10mph to SHUNT WR29","When SHUNT WR28 / WR29 clears, draw up to the shunter and act upon their instructions"]],
+["Depot east to platforms",5,["Await call from Northfields EAST Cabin","When advised to draw down, ensure SHUNT WR7 (1 – 10 roads) or SHUNT WR8 (11 – 19 roads) has cleared","Whistle, check the walk boards are clear, and proceed past your relevant shunt to SHUNT WR9","When SHUNT WR9 clears with: Route 1 → platform 4 (eastbound local). Route 2 → platform 3 (eastbound fast). Route 3 → platform 2 (westbound fast)","!Beware of the 5mph trainstops on 6 Road when exiting the depot"]]
+]],
+["Boston Manor","bm,ws,northfields depot west",[
+["Northfields depot west to Boston Manor eastbound",5,["Await clearance from the shunter to draw down to the west end lock-ins","Whistle, check the walk boards are clear, and proceed to the walk boards at the bottom of the depot at no more than 5mph","The shunter should show a GREEN hand signal (lamp or flag). If so, continue to signal WS10a; if not, await clearance","Press the PLUNGER adjacent to SIGNAL WS10a","When SHUNT WS10b clears, proceed at 10mph to the FIXED RED LIGHT","CE","Accept SIGNAL WS3a displaying GREEN and re-enter service at BOSTON MANOR eastbound"]],
+["Northfields depot west to Osterley westbound",5,["Await clearance from the shunter to draw down to the west end lock-ins","Whistle, check the walk boards are clear, and proceed to the walk boards at the bottom of the depot at no more than 5mph","The shunter should show a GREEN hand signal. If so, continue to signal WS10a; if not, await clearance","Press the PLUNGER adjacent to SIGNAL WS10a","When SIGNAL WS10a displays GREEN, proceed at 10mph to the LIMIT OF SHUNT board, where you can resume line speed"]],
+["East to west",10,["Detrain at OSTERLEY using porter buttons","Proceed to SHUNT WS3b / signal WS3a","Accept SHUNT WS3b into Northfields Depot West reception road at no more than 10mph","!Stop at the STOP board","CE","Press the PLUNGER adjacent to SIGNAL WS10a","When SIGNAL WS10a displays GREEN, proceed at 10mph to the LIMIT OF SHUNT board, where you can resume line speed"]],
+["West to east",10,["Detrain at Boston Manor westbound using porter buttons","Accept SIGNAL WS11 displaying GREEN to the LIMIT OF SHUNT board","CE","Accept SHUNT WS4 into Northfields Depot West reception road at no more than 10mph","!Stop at the STOP board","CE","Press the PLUNGER adjacent to SIGNAL WS10a","When SHUNT WS10b clears, proceed at 10mph to the FIXED RED LIGHT","CE","Accept SIGNAL WS3a displaying GREEN and re-enter service at BOSTON MANOR eastbound"]]
+]],
+["Hounslow Central","hc,wt",[
+["West to east",10,["Stop at the usual stopping mark at platform 1 (westbound)","You should see an ILLUMINATED R sign adjacent to signal WT11 (starter), advising you to ‘Reverse’","CE","If the signal has not already cleared, press the PLUNGER adjacent to SIGNAL WT3","When SIGNAL WS3 displays GREEN, proceed at 10mph to signal A421, where you can resume line speed","~Booklet prints WS3 here although the plunger is at WT3 – check on the ground"]]
+]],
+["Hatton Cross","hx,ww",[
+["West to east – platform 1 (westbound)",30,["Accept SIGNAL WW11 showing GREEN without route indicator","Stop at the usual stopping mark at the westbound platform","You should see an ILLUMINATED R sign adjacent to signal WW9 (starter), advising you to ‘Reverse’","CE","When SIGNAL WW4 displays GREEN, proceed at a maximum of 30mph over the crossover to the T board"]],
+["West to east – platform 2 (eastbound)",30,["Accept SIGNAL WW11 showing GREEN with route indicator to the RIGHT","Proceed at a maximum of 30mph into platform 2, stopping at the stopping mark","!You will need to carry out the CSDE Override procedure","CE","When SIGNAL WW3 displays GREEN, proceed at line speed"]]
+]],
+["Heathrow T2&3","heathrow,t2,t3,t2&3,t23,terminal 2,terminal 3,wy,lhr",[
+["West to east – platform 1 (westbound)",25,["Accept SIGNAL WY11 with route indicator to the LEFT","Stop at the usual stopping mark at the westbound platform","CE","When SIGNAL WY4 displays GREEN, proceed at 25mph to the T board"]],
+["West to east – platform 2 (eastbound)",25,["Accept SIGNAL WY11 with route indicator to the RIGHT","Stop at the stopping mark at the eastbound platform","CE","When SIGNAL WY3 displays GREEN, proceed at 25mph to the T board"]],
+["Heathrow T4 → T2&3 westbound",0,["Depart Heathrow Terminal 4 as normal","At SIGNAL WY1, you will receive a GREEN signal with route indicator to the RIGHT","Proceed at up to normal line speed to the stopping mark (at what would normally be the tailwall) at T2&3 westbound"]]
+]],
+["Heathrow T5","t5,terminal 5,heathrow,wz,lhr",[
+["Westbound platform via 21 / 22 siding",15,["Stop at the correct stopping mark at T5 westbound platform and detrain using porter buttons","!CHECK SHUNT WZ11 has cleared","Accept SHUNT WZ11 with Route 1 → 21 siding, Route 2 → 22 siding","Proceed at 15mph, noting the speed-controlled train stop in both sidings set at 15mph","Stop at the stopping mark","CE","Press the READY TO START plunger until the light illuminates","Accept SHUNT WZ1 from 21 siding, or SHUNT WZ2 from 22 siding","Proceed at 15mph into the eastbound platform and stop at the stopping mark","Proceed at line speed upon SIGNAL WZ6 showing GREEN (hold until your correct departure time)"]]
+]],
+["South Harrow","sh,wv",[
+["West to east – platform 1 (westbound)",10,["Accept SIGNAL WV2 without route indicator","Stop at the usual stopping mark at the westbound platform","You should see an ILLUMINATED REVERSE sign adjacent to signal WV4 (starter)","CE","When SIGNAL WV22 displays GREEN, depart at 15mph over the crossover to the LIMIT OF SHUNT board, and resume line speed"]],
+["West to east – platform 2 (eastbound)",10,["Accept SIGNAL WV2 with route indicator to the RIGHT, passing over the points at no more than 10mph","Proceed at a maximum of 15mph into platform 2, stopping at the diamond stopping mark","CE","When SIGNAL WV23 displays GREEN, depart at line speed"]],
+["Entry to sidings",10,["DETRAIN using porter buttons","Accept SHUNT WV18 (westbound) or SHUNT WV19 (eastbound) with Route 1 → 1 siding, Route 3 → 3 siding, Route 4 → 4 siding, Route 5 → 5 siding","!There is a 10mph speed controlled trainstop as you enter the sidings","Proceed at 10mph from the platform to the 73 diamond stopping mark at the first set of gates on the second boarding platform","~There is also a 24 diamond stopping mark after this for the new 24 Stock trains. You must request authority to move your train if you stop at the incorrect stopping mark"]],
+["Sidings exit",10,["When your train number is displayed on the Dot Matrix Screen in the siding, press the PLUNGER adjacent to your road","Wait until your SHUNT clears: WV9m on 1 road, WV9k on 3 road, WV9j on 4 road, WV9h on 5 road","Proceed at 10mph to outlet SHUNT WV9, which clears with Route 1 → westbound platform, Route 2 → eastbound platform","If platform 1: stop at the usual stopping mark and depart eastbound upon SIGNAL WV4 GREEN, OR change ends and depart westbound upon SIGNAL WV22 GREEN","If platform 2 westbound: stop at the diamond stopping mark, change ends, depart upon SIGNAL WV23 GREEN"]],
+["East to west via mainline shunt",10,["Arrive eastbound platform 2 and detrain using porter buttons","When SIGNAL WV23 displays GREEN, proceed at 10mph to the LIMIT OF SHUNT board on the mainline","CE","When SHUNT WV7 clears, proceed at 10mph to the usual stopping mark at westbound platform 1"]]
+]],
+["Rayners Lane","rl,mp",[
+["West to east via siding",10,["Arrive westbound and stop at the 8 mark in the 4-foot","Detrain using porter buttons","When SHUNT MP16 clears, proceed at 10mph into Rayners Lane siding","!Be aware of the 10mph speed-controlled train stop in the siding","Stop at the P stopping diamond in the 4-foot","CE","When SHUNT MP7 clears displaying: Route 1 – proceed at 10mph into the eastbound platform, then accept SIGNAL MP4 GREEN with route indicator to the RIGHT, proceeding at 20mph to the 45mph board. Route 2 – proceed at 10mph into the westbound platform, then accept SIGNAL MP6 GREEN with route indicator to the RIGHT, proceeding at 15mph to the 45mph board"]],
+["West to east via wrong road starter",15,["Arrive westbound and stop at the 8 mark in the 4-foot","CE","When SIGNAL MP6 displays GREEN with route indicator to the RIGHT, proceed at 15mph eastbound to the 45mph board"]],
+["East to west",10,["Arrive eastbound and stop at the usual stopping mark","Detrain using porter buttons, while changing ends","Accept SHUNT MP15 and proceed at 10mph into Rayners Lane siding","!Be aware of the 10mph speed-controlled train stop in the siding","Stop at the P stopping diamond in the 4-foot","CE","When SHUNT MP7 clears displaying Route 2, continue at 10mph into the westbound platform","Stop at the P diamond in the 4-foot","CE","When SIGNAL MP17 displays GREEN, proceed westbound at line speed"]]
+]],
+["Ruislip","ruislip siding,ickenham,mu",[
+["West to east via Ruislip siding",10,[
+"~If reversing via Ruislip siding, you will often be asked to DETRAIN at Rayners Lane westbound and continue OUT OF SERVICE to Ruislip siding. If so, re-enter service at Ruislip eastbound",
+"=If detraining at Ruislip","Stop at the usual stopping mark at Ruislip westbound and detrain using porter buttons",
+"=With an empty train (wherever you detrained)","When SIGNAL MUX738 displays GREEN, proceed westbound normally up to SIGNAL MU11b","When SHUNT MU11a clears, proceed at 10mph into the siding, stopping at the 6 car mark in the four-foot","!If you cannot see the 6 car mark, stop at the 8 Car Mark or adjacent to running signal A740","CE","When SIGNAL MU3a displays GREEN, proceed at 10mph to the LIMIT OF SHUNT board, where you can resume line speed","!DO NOT ACCEPT SHUNT MU3b – it takes you into West Ruislip depot (Central line and Engineering depot)"]],
+["Ickenham – east to west",10,["Detrain at Ickenham","Proceed under clear signals as far as LOS just after Ruislip siding (shortly before the bridge)","CE","When SIGNAL MU9b displays GREEN, proceed at 10mph to SIGNAL A740, where you can resume normal line speed","Accepting SHUNT MU9a at 10mph takes you into Ruislip siding, where the stopping mark is the P diamond","!If the P Diamond cannot be seen, stop at the 8 Car Mark or adjacent to running signal A740"]]
+]],
+["Uxbridge","ux,mw,hillingdon",[
+["Platforms to sidings",10,["Accept SHUNT MW7 (platform 1), MW6 (platform 3) or MW5 (platform 4), proceeding from the shunt neck entrance at 10mph up to the P diamond in the four-foot","!Be aware of the slow speed train stops","CE","Accept SHUNT MW52 displaying ROUTE 2 or ROUTE 3 and proceed at 10mph. Route 2 → stopping mark on roads 27 – 34. Route 3 → stopping mark on roads 35 – 38","~You will not be given a route to an exact road","!DO NOT ACCEPT ROUTE 1 back to the platforms"]],
+["Sidings to platforms",10,["=27 – 34 roads","Accept SHUNT MW9 – MW12 and proceed at 10mph to SHUNT MW21. When it clears, proceed at 10mph to the P diamond",
+"=35 – 38 roads","Accept SHUNT MW13 – MW20 and proceed at 10mph to SHUNT MW22. When it clears, proceed at 10mph to the P diamond by signal MW24","!Be aware of the slow speed train stops","CE","When SHUNT MW52 clears with ROUTE 1, proceed at 10mph to SHUNT MW51","!DO NOT ACCEPT ROUTE 2 OR 3","When SHUNT MW51 clears: Route 1 → Uxbridge platform 1. Route 2 → platform 3. Route 3 → platform 4. Accept and proceed at 10mph"]],
+["Sidings to Hillingdon – ‘over the top’",10,["=27 – 34 roads","Accept SHUNT MW9 – MW12 and proceed at 10mph to SHUNT MW21. When it clears, proceed at 10mph to signal MW24","Accept SIGNAL MW24 displaying GREEN, proceed at 10mph until signal A751, from which you resume line speed",
+"=35 – 38 roads","Accept SHUNT MW13 – MW20 and proceed at 10mph to SHUNT MW22. When it clears, proceed at 10mph to signal MW24","Accept SIGNAL MW24 displaying GREEN, proceed at 10mph until signal A751, from which you resume line speed"]]
+]]
+];
+
+const $=s=>document.querySelector(s),out=$("#out"),q=$("#q");
+const esc=t=>t.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const norm=t=>t.toLowerCase().replace(/[’']/g,"").replace(/\s+/g," ").trim();
+const CODE=/\b(?:P[MJKGBD]|W[DLRSTVWYZ]|M[PUW]|WRX|L|A)\d+[a-zA-Z]?\b/g;
+function fmt(t,term){let h=esc(t).replace(CODE,m=>"<b class=c>"+m+"</b>");
+ if(term){const r=new RegExp("("+term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")(?![^<]*>)","ig");h=h.replace(r,"<mark>$1</mark>")}return h}
+function moveHTML(m,term,open){
+ const[t,sp,ls]=m;
+ let h=`<details class="move"${open?" open":""}><summary><span class="sp${sp?"":" none"}" title="${sp?"Speed limit mph":"Line speed"}">${sp||"LS"}</span><span>${fmt(t,term)}</span></summary><div class="body"><ol>`;
+ for(const l of ls){
+  if(l==="CE")h+=`<li class="ce">Change ends</li>`;
+  else if(l[0]==="!")h+=`<li class="w">${fmt(l.slice(1),term)}</li>`;
+  else if(l[0]==="@")h+=`<li class="pa">${fmt(l.slice(1),term)}</li>`;
+  else if(l[0]==="=")h+=`<li class="h">${fmt(l.slice(1),term)}</li>`;
+  else if(l[0]==="~")h+=`<li class="i">${fmt(l.slice(1),term)}</li>`;
+  else h+=`<li class="n">${fmt(l,term)}</li>`}
+ return h+"</ol></div></details>"}
+const allText=m=>norm(m[0]+" "+m[2].join(" "));
+function render(){
+ const raw=q.value,n=norm(raw);
+ if(!n){out.innerHTML=`<p class="cnt">${D.length} locations, ${D.reduce((a,s)=>a+s[2].length,0)} moves. Tap a station or start typing.</p>`;return}
+ let hits=D.filter(s=>norm(s[0]).includes(n)||s[1].split(",").some(a=>a.trim()===n||(n.length>1&&a.trim().startsWith(n))));
+ let html="";
+ if(hits.length){
+  for(const s of hits)html+=`<h2 class="st">${esc(s[0])}</h2><p class="cnt">${s[2].length} move${s[2].length>1?"s":""}</p>`+s[2].map(m=>moveHTML(m,"",true)).join("");
+ }else{
+  let c=0;
+  for(const s of D){const ms=s[2].filter(m=>allText(m).includes(n));
+   if(ms.length){c+=ms.length;html+=`<h2 class="st">${esc(s[0])}</h2>`+ms.map(m=>moveHTML(m,raw.trim(),true)).join("")}}
+  html=c?`<p class="cnt">No station by that name. ${c} move${c>1?"s":""} mention “${esc(raw.trim())}”.</p>`+html
+        :`<p class="empty">Nothing found for “${esc(raw.trim())}”. Try a station name, a short form like KX or HPC, or a signal such as PJ31.</p>`}
+ out.innerHTML=html}
+$("#chips").innerHTML=D.map(s=>`<button class="chip" data-s="${esc(s[0])}">${esc(s[0])}</button>`).join("");
+$("#chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b){q.value=b.dataset.s;render();scrollTo({top:0,behavior:"smooth"})}});
+q.addEventListener("input",render);render();
+</script>
+</body>
+</html>
